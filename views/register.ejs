@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/styles.css">
+  <title>Register</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Register</h1>
+
+    <!-- Registration Method Selection -->
+    <label>
+      <input type="radio" name="registerMethod" value="faceid" onclick="showRegisterForm()"> Register with Face-ID
+    </label>
+    <label>
+      <input type="radio" name="registerMethod" value="biometric" onclick="showRegisterForm()"> Register with Fingerprint
+    </label>
+    <label>
+      <input type="radio" name="registerMethod" value="password" onclick="showRegisterForm()"> Register with Name and Password
+    </label>
+
+    <!-- Face-ID Section (Hidden initially) -->
+    <div id="faceIdSection" class="hidden">
+      <button id="captureFaceId">Capture Face-ID</button>
+      <p id="faceIdMessage"></p>
+    </div>
+
+    <!-- Fingerprint Section (Hidden initially) -->
+    <div id="biometricSection" class="hidden">
+      <button id="captureBiometric">Register with Fingerprint</button>
+      <p id="biometricMessage"></p>
+    </div>
+
+    <!-- Name/Password Form Section (Hidden initially) -->
+    <form id="passwordSection" class="hidden" action="/register" method="POST">
+      <label>Name:</label>
+      <input type="text" name="name" required>
+      <label>Email:</label>
+      <input type="email" name="email" required>
+      <label>Password:</label>
+      <input type="password" name="password" required>
+      <button type="submit">Register</button>
+    </form>
+
+    <p>If already registered, <a href="/login">Login here</a>.</p>
+  </div>
+
+  <!-- Include necessary JS files -->
+  <script src="/js/faceid.js"></script>
+  <script src="/js/biometric.js"></script>
+  <script>
+    // Function to show the appropriate form based on the selected radio button
+    function showRegisterForm() {
+      const selectedMethod = document.querySelector('input[name="registerMethod"]:checked').value;
+
+      // Hide all sections initially
+      document.getElementById('faceIdSection').classList.add('hidden');
+      document.getElementById('biometricSection').classList.add('hidden');
+      document.getElementById('passwordSection').classList.add('hidden');
+
+      // Show the selected section
+      if (selectedMethod === 'faceid') {
+        document.getElementById('faceIdSection').classList.remove('hidden');
+      } else if (selectedMethod === 'biometric') {
+        document.getElementById('biometricSection').classList.remove('hidden');
+      } else if (selectedMethod === 'password') {
+        document.getElementById('passwordSection').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

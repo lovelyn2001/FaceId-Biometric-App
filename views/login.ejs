@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/styles.css">
+  <title>Login</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Login</h1>
+
+    <!-- Login Method Selection -->
+    <label>
+      <input type="radio" name="loginMethod" value="faceid" onclick="showLoginForm()"> Login with Face-ID
+    </label>
+    <label>
+      <input type="radio" name="loginMethod" value="biometric" onclick="showLoginForm()"> Login with Fingerprint
+    </label>
+    <label>
+      <input type="radio" name="loginMethod" value="password" onclick="showLoginForm()"> Login with Name and Password
+    </label>
+
+    <!-- Face-ID Section (Hidden initially) -->
+    <div id="faceIdSection" class="hidden">
+      <button id="loginFaceId">Login with Face-ID</button>
+      <p id="faceIdLoginMessage"></p>
+    </div>
+
+    <!-- Fingerprint Section (Hidden initially) -->
+    <div id="biometricSection" class="hidden">
+      <button id="loginBiometric">Login with Fingerprint</button>
+      <p id="biometricLoginMessage"></p>
+    </div>
+
+    <!-- Name/Password Form Section (Hidden initially) -->
+    <form id="passwordSection" class="hidden" action="/login" method="POST">
+      <label>Email:</label>
+      <input type="email" name="email" required>
+      <label>Password:</label>
+      <input type="password" name="password" required>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Include necessary JS files -->
+  <script src="/js/faceid.js"></script>
+  <script src="/js/biometric.js"></script>
+  <script>
+    // Function to show the appropriate form based on the selected radio button
+    function showLoginForm() {
+      const selectedMethod = document.querySelector('input[name="loginMethod"]:checked').value;
+
+      // Hide all sections initially
+      document.getElementById('faceIdSection').classList.add('hidden');
+      document.getElementById('biometricSection').classList.add('hidden');
+      document.getElementById('passwordSection').classList.add('hidden');
+
+      // Show the selected section
+      if (selectedMethod === 'faceid') {
+        document.getElementById('faceIdSection').classList.remove('hidden');
+      } else if (selectedMethod === 'biometric') {
+        document.getElementById('biometricSection').classList.remove('hidden');
+      } else if (selectedMethod === 'password') {
+        document.getElementById('passwordSection').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
