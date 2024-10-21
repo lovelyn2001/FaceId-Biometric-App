@@ -38,9 +38,6 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-const fs = require('fs');
-const path = require('path');
-
 // Define the path to the uploads folder
 const uploadDir = path.join(__dirname, 'uploads');
 
