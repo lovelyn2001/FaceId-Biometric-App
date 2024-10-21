@@ -133,27 +133,37 @@ app.get('/dashboard', (req, res) => {
 // });
 
 
+// Upload Route
 app.post('/upload', (req, res) => {
-    // Check if a file was uploaded
+    // Check if any files are uploaded
     if (!req.files || Object.keys(req.files).length === 0) {
+        console.error('No files were uploaded.');
         return res.status(400).send('No file was uploaded.');
     }
 
     // Access the uploaded file
     const uploadedFile = req.files.uploadedFile;
+
+    if (!uploadedFile) {
+        console.error('uploadedFile is undefined.');
+        return res.status(400).send('No uploaded file found.');
+    }
+
+    console.log('File name:', uploadedFile.name);  // Log the file name
+
+    // Define the path where the file will be uploaded
     const uploadPath = path.join(uploadDir, uploadedFile.name);
 
-    // Move the file to the 'uploads' directory
+    // Move the file to the upload directory
     uploadedFile.mv(uploadPath, (err) => {
         if (err) {
             console.error('File upload failed:', err);
-            return res.status(500).send(err);
+            return res.status(500).send('File upload failed.');
         }
-        res.send('File uploaded successfully');
+
+        res.redirect('/dashboard');
     });
 });
-
-
 // Handle file download
 app.get('/download/:filename', (req, res) => {
     const filePath = path.join(__dirname, 'uploads', req.params.filename);
