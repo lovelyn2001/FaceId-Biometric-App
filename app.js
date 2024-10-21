@@ -7,9 +7,11 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
+const fileUpload = require('express-fileupload');
 
 const app = express();
 
+app.use(fileUpload());
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI).then(() => console.log("MongoDB connected"))
   .catch(err => console.error(err));
@@ -66,7 +68,7 @@ app.post('/register', async (req, res) => {
     const { username, password, faceData } = req.body;
 
     if (faceData) {
-        console.log('Received face data:', faceData);
+        console.log('Received face data:');
         // Handle face registration here (e.g., save faceData)
         res.redirect('/login');
     } else if (username && password) {
@@ -132,21 +134,25 @@ app.get('/dashboard', (req, res) => {
 
 
 app.post('/upload', (req, res) => {
-    ensureUploadsDirExists(); // Ensure 'uploads' folder exists before handling file upload
+    // Check if a file was uploaded
+    if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).send('No file was uploaded.');
+    }
 
-    // Now handle file upload logic
+    // Access the uploaded file
     const uploadedFile = req.files.uploadedFile;
     const uploadPath = path.join(uploadDir, uploadedFile.name);
 
+    // Move the file to the 'uploads' directory
     uploadedFile.mv(uploadPath, (err) => {
         if (err) {
             console.error('File upload failed:', err);
             return res.status(500).send(err);
         }
-        alert('file uploaded sucessfully');
-        res.redirect('/dashboard');
+        res.send('File uploaded successfully');
     });
 });
+
 
 // Handle file download
 app.get('/download/:filename', (req, res) => {
