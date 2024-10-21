@@ -38,6 +38,24 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
+const fs = require('fs');
+const path = require('path');
+
+// Define the path to the uploads folder
+const uploadDir = path.join(__dirname, 'uploads');
+
+// Function to check if 'uploads' directory exists and create it if not
+function ensureUploadsDirExists() {
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir);
+        console.log(`'uploads' folder was not found, so it was created at: ${uploadDir}`);
+    }
+}
+
+// Call this function when the server starts
+ensureUploadsDirExists();
+
+
 // Routes
 
 // Register Page
@@ -110,9 +128,27 @@ app.get('/dashboard', (req, res) => {
     });
 });
 
-// Handle file upload
-app.post('/upload', upload.single('medicalFile'), (req, res) => {
-    res.redirect('/dashboard');
+// // Handle file upload
+// app.post('/upload', upload.single('medicalFile'), (req, res) => {
+//     res.redirect('/dashboard');
+// });
+
+
+app.post('/upload', (req, res) => {
+    ensureUploadsDirExists(); // Ensure 'uploads' folder exists before handling file upload
+
+    // Now handle file upload logic
+    const uploadedFile = req.files.uploadedFile;
+    const uploadPath = path.join(uploadDir, uploadedFile.name);
+
+    uploadedFile.mv(uploadPath, (err) => {
+        if (err) {
+            console.error('File upload failed:', err);
+            return res.status(500).send(err);
+        }
+        alert('file uploaded sucessfully');
+        res.redirect('/dashboard');
+    });
 });
 
 // Handle file download
