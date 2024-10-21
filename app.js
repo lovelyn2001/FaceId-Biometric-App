@@ -6,7 +6,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 const fileUpload = require('express-fileupload');
 
 const app = express();
@@ -176,5 +176,6 @@ app.get('/logout', (req, res) => {
     res.redirect('/login');
 });
 
-// Start server
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`)
+  })
