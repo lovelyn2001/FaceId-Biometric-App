@@ -1,152 +1,131 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
 const session = require('express-session');
-const bcrypt = require('bcryptjs');
-const multer = require('multer'); // For file uploads
-const path = require('path');
+const bodyParser = require('body-parser');
+const multer = require('multer');
 const fs = require('fs');
- require('dotenv').config();
+const path = require('path');
+require('dotenv').config();
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-const dontenv = require('dotenv').config
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+mongoose.connect(process.env.MONGODB_URI).then(() => console.log("MongoDB connected"))
+  .catch(err => console.error(err));
 
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+// Set view engine and middleware
 app.set('view engine', 'ejs');
-
-// Sessions
-app.use(
-  session({
-    secret: 'secretKey',
+app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(session({
+    secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
-  })
-);
+    saveUninitialized: true
+}));
 
-// Multer config for file uploads
-const upload = multer({
-  dest: 'uploads/',
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, file.originalname)
 });
+const upload = multer({ storage });
 
-// Define User schema and model in app.js
+// User Schema
 const userSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  password: String,
-  faceIdData: String,  // For Face-ID (face descriptor)
-  biometricData: String, // For Biometric (fingerprint)
+    username: String,
+    password: String
 });
 const User = mongoose.model('User', userSchema);
 
 // Routes
 
-// Home Page
-app.get('/', (req, res) => {
-  res.render('index');
-});
-
 // Register Page
-app.get('/register', (req, res) => {
-  res.render('register');
-});
+app.get('/register', (req, res) => res.render('register'));
 
-// Handle Registration
+
+app.get('/', (req, res) => res.render('register'));
+
+
 app.post('/register', async (req, res) => {
-  const { name, email, password, faceId, biometric } = req.body;
+    const { username, password, faceData } = req.body;
 
-  if (password) {
-    // Hash password if registering with email/password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashedPassword });
-    await user.save();
-    res.redirect('/login');
-  } else if (faceId) {
-    // Store Face-ID data
-    const user = new User({ name, faceIdData: faceId });
-    await user.save();
-    res.redirect('/login');
-  } else if (biometric) {
-    // Store Biometric data (fingerprint)
-    const user = new User({ name, biometricData: biometric });
-    await user.save();
-    res.redirect('/login');
-  } else {
-    res.send('Invalid registration method');
-  }
+    if (faceData) {
+        console.log('Received face data:', faceData);
+        // Handle face registration here (e.g., save faceData)
+        res.redirect('/login');
+    } else if (username && password) {
+        console.log("Received registration data:", req.body); // Log received data
+        try {
+            const newUser = new User({ username, password });
+            await newUser.save();
+            console.log('User registered:', newUser);
+            res.redirect('/login');
+        } catch (error) {
+            console.error('Error registering user:', error);
+            res.redirect('/register');
+        }
+    } else {
+        res.redirect('/register');
+    }
 });
+
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    // Log incoming login data for debugging
+    console.log("Login request received:", req.body);
+
+    try {
+        // Find user in the database
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(400).send('User not found');
+        }
+
+        // Compare passwords (you should hash passwords in real implementation)
+        if (user.password === password) {
+            // Successful login, redirect to dashboard
+            return res.redirect('/dashboard');
+        } else {
+            return res.status(400).send('Invalid password');
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+        return res.status(500).send('Server error');
+    }
+});
+
 
 // Login Page
-app.get('/login', (req, res) => {
-  res.render('login');
-});
-
-// Handle Login
-app.post('/login', async (req, res) => {
-  const { email, password, faceId, biometric } = req.body;
-
-  if (password) {
-    const user = await User.findOne({ email });
-    if (user && await bcrypt.compare(password, user.password)) {
-      req.session.userId = user._id;
-      res.redirect('/dashboard');
-    } else {
-      res.send('Invalid login');
-    }
-  } else if (faceId) {
-    // Handle Face-ID login
-    const user = await User.findOne({ faceIdData: faceId });
-    if (user) {
-      req.session.userId = user._id;
-      res.redirect('/dashboard');
-    } else {
-      res.send('Invalid Face-ID login');
-    }
-  } else if (biometric) {
-    // Handle Biometric login
-    const user = await User.findOne({ biometricData: biometric });
-    if (user) {
-      req.session.userId = user._id;
-      res.redirect('/dashboard');
-    } else {
-      res.send('Invalid Biometric login');
-    }
-  }
-});
+app.get('/login', (req, res) => res.render('login'));
 
 // Dashboard
 app.get('/dashboard', (req, res) => {
-  if (!req.session.userId) return res.redirect('/login');
-  res.render('dashboard');
+    fs.readdir('uploads', (err, files) => {
+        if (err) throw err;
+        res.render('dashboard', { files });
+    });
 });
 
-// File upload
-app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.session.userId) return res.redirect('/login');
-  res.send(`File uploaded: ${req.file.originalname}`);
+// Handle file upload
+app.post('/upload', upload.single('medicalFile'), (req, res) => {
+    res.redirect('/dashboard');
 });
 
-// JavaScript for Face-ID (front-end)
-app.get('/js/faceid.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/js/faceid.js'));
+// Handle file download
+app.get('/download/:filename', (req, res) => {
+    const filePath = path.join(__dirname, 'uploads', req.params.filename);
+    res.download(filePath);
 });
 
-// JavaScript for Biometric (front-end)
-app.get('/js/biometric.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/js/biometric.js'));
+// Logout
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/login');
 });
 
-// Start the server
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
-});
+// Start server
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

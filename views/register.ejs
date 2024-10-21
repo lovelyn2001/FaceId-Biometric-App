@@ -1,74 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/css/styles.css">
-  <title>Register</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script>
+        function toggleRegister(option) {
+            // Hide all form sections
+            document.querySelectorAll('.form-section').forEach(section => section.style.display = 'none');
+
+            // Show the selected option
+            document.getElementById(option).style.display = 'block';
+
+            // If Face ID is selected, start the camera
+            if (option === 'face-id') {
+                startCamera();
+            }
+        }
+
+        // Start Camera for Face ID Registration/Login
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.play();
+                    const videoContainer = document.getElementById('videoContainer');
+                    videoContainer.innerHTML = ''; // Clear previous video
+                    videoContainer.appendChild(video);
+                    document.getElementById('captureFaceButton').style.display = "block";
+                })
+                .catch(err => {
+                    console.error("Error accessing camera:", err);
+                    alert("Unable to access camera.");
+                });
+        }
+
+        // Capture Face and Store in Hidden Input
+        function captureFace() {
+            const video = document.querySelector('video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0);
+            const faceData = canvas.toDataURL('image/png');
+            document.getElementById('faceData').value = faceData;
+
+            // Submit the form containing faceData
+            document.getElementById('faceIdForm').submit();
+        }
+    </script>
 </head>
 <body>
-  <div class="container">
-    <h1>Register</h1>
+    <div class="container">
+        <h1>Register</h1>
+        <label>
+            <input type="radio" name="registerOption" value="faceId" onclick="toggleRegister('face-id')"> Face ID
+        </label>
+        <label>
+            <input type="radio" name="registerOption" value="usernamePassword" onclick="toggleRegister('username-password')"> Name and Password
+        </label>
 
-    <!-- Registration Method Selection -->
-    <label>
-      <input type="radio" name="registerMethod" value="faceid" onclick="showRegisterForm()"> Register with Face-ID
-    </label>
-    <label>
-      <input type="radio" name="registerMethod" value="biometric" onclick="showRegisterForm()"> Register with Fingerprint
-    </label>
-    <label>
-      <input type="radio" name="registerMethod" value="password" onclick="showRegisterForm()"> Register with Name and Password
-    </label>
+        <!-- Face ID section -->
+        <form id="faceIdForm" action="/register" method="POST">
+            <div id="face-id" class="form-section" style="display:none;">
+                <div id="videoContainer"></div>
+                <button type="button" id="captureFaceButton" style="display:none;" onclick="captureFace()">Capture Face</button>
+            </div>
 
-    <!-- Face-ID Section (Hidden initially) -->
-    <div id="faceIdSection" class="hidden">
-      <button id="captureFaceId">Capture Face-ID</button>
-      <p id="faceIdMessage"></p>
+            <!-- Hidden field to store face data -->
+            <input type="hidden" id="faceData" name="faceData">
+        </form>
+
+        <!-- Username & Password section -->
+        <form id="usernamePasswordForm" action="/register" method="POST">
+            <div id="username-password" class="form-section" style="display:none;">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Register</button>
+            </div>
+        </form>
+
+        <a href="/login">Already Registered? Login</a>
     </div>
-
-    <!-- Fingerprint Section (Hidden initially) -->
-    <div id="biometricSection" class="hidden">
-      <button id="captureBiometric">Register with Fingerprint</button>
-      <p id="biometricMessage"></p>
-    </div>
-
-    <!-- Name/Password Form Section (Hidden initially) -->
-    <form id="passwordSection" class="hidden" action="/register" method="POST">
-      <label>Name:</label>
-      <input type="text" name="name" required>
-      <label>Email:</label>
-      <input type="email" name="email" required>
-      <label>Password:</label>
-      <input type="password" name="password" required>
-      <button type="submit">Register</button>
-    </form>
-
-    <p>If already registered, <a href="/login">Login here</a>.</p>
-  </div>
-
-  <!-- Include necessary JS files -->
-  <script src="/js/faceid.js"></script>
-  <script src="/js/biometric.js"></script>
-  <script>
-    // Function to show the appropriate form based on the selected radio button
-    function showRegisterForm() {
-      const selectedMethod = document.querySelector('input[name="registerMethod"]:checked').value;
-
-      // Hide all sections initially
-      document.getElementById('faceIdSection').classList.add('hidden');
-      document.getElementById('biometricSection').classList.add('hidden');
-      document.getElementById('passwordSection').classList.add('hidden');
-
-      // Show the selected section
-      if (selectedMethod === 'faceid') {
-        document.getElementById('faceIdSection').classList.remove('hidden');
-      } else if (selectedMethod === 'biometric') {
-        document.getElementById('biometricSection').classList.remove('hidden');
-      } else if (selectedMethod === 'password') {
-        document.getElementById('passwordSection').classList.remove('hidden');
-      }
-    }
-  </script>
+    <script src="/scripts.js"></script>
 </body>
 </html>
